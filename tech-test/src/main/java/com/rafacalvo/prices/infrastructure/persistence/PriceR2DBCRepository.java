@@ -13,6 +13,7 @@ public interface PriceR2DBCRepository extends ReactiveCrudRepository<PriceEntity
         WHERE BRAND_ID = :brandId 
           AND PRODUCT_ID = :productId 
           AND :fecha BETWEEN START_DATE AND END_DATE 
+        ORDER BY PRIORITY DESC
         LIMIT 1
     """)
     Mono<PriceEntity> findBestPrice(Integer brandId, Integer productId, LocalDateTime fecha);

@@ -2,6 +2,7 @@ package com.rafacalvo.prices.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.rafacalvo.prices.domain.Price;
 import com.rafacalvo.prices.domain.querying.PriceRepository;
 
 import reactor.core.publisher.Mono;
@@ -37,14 +39,10 @@ public class PriceQueryingServiceTest {
         Integer priceList = 1;
         BigDecimal price = new BigDecimal("100.0");
         String currency = "EUR";
-        PriceResponse expectedResponse = new PriceResponse(
-                brandId,
-                productId,
-                priceList,
-                startDate,
-                endDate,
-                price,
-                currency);
+        Price priceEntity = new Price(1L, brandId, startDate, endDate, priceList, productId, 0, price, currency);
+        PriceResponse expectedResponse = new PriceResponse(brandId, productId, priceList, startDate, endDate, price, currency);
+        // mocks
+        when(priceRepository.findBestPrice(brandId, productId, dateTime)).thenReturn(priceEntity);
 
         // When
         Mono<PriceResponse> actualResponseMono = priceQueryingService.getBestPrice(brandId, productId, dateTime);

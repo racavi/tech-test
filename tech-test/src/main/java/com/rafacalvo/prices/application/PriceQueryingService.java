@@ -17,7 +17,7 @@ public class PriceQueryingService {
     private final PriceRepository priceRepository;
 
     public Mono<PriceResponse> getBestPrice(Integer brandId, Integer productId, LocalDateTime dateTime) {
-        return Mono.fromCallable(() -> priceRepository.findBestPrice(brandId, productId, dateTime))
+        return priceRepository.findBestPrice(brandId, productId, dateTime)
                    .map(this::toPriceResponse);
     }
 

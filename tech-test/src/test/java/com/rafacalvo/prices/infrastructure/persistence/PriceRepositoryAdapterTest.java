@@ -1,7 +1,6 @@
 package com.rafacalvo.prices.infrastructure.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -12,10 +11,10 @@ import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.Test;
 
-import com.rafacalvo.prices.domain.Price;
 import com.rafacalvo.prices.domain.querying.PriceNotFoundException;
 
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 class PriceRepositoryAdapterTest {
 
@@ -36,15 +35,16 @@ class PriceRepositoryAdapterTest {
 
         when(r2dbcRepository.findBestPrice(brandId, productId, fecha)).thenReturn(Mono.just(mockEntity));
 
-        // When
-        Price price = adapter.findBestPrice(brandId, productId, fecha);
-
-        // Then
-        assertThat(price).isNotNull();
-        assertThat(price.brandId()).isEqualTo(brandId);
-        assertThat(price.productId()).isEqualTo(productId);
-        assertThat(price.price()).isEqualTo(new BigDecimal("35.50"));
-        assertThat(price.currency()).isEqualTo("EUR");
+        // When & Then
+        StepVerifier.create(adapter.findBestPrice(brandId, productId, fecha))
+                    .expectNextMatches(price -> {
+                        assertThat(price.brandId()).isEqualTo(brandId);
+                        assertThat(price.productId()).isEqualTo(productId);
+                        assertThat(price.price()).isEqualTo(new BigDecimal("35.50"));
+                        assertThat(price.currency()).isEqualTo("EUR");
+                        return true;
+                    })
+                    .verifyComplete();
 
         verify(r2dbcRepository, times(1)).findBestPrice(brandId, productId, fecha);
     }
@@ -58,13 +58,11 @@ class PriceRepositoryAdapterTest {
 
         when(r2dbcRepository.findBestPrice(brandId, productId, fecha)).thenReturn(Mono.empty());
 
-        // When
-        Throwable thrown = catchThrowable(() -> adapter.findBestPrice(brandId, productId, fecha));
-
-        // Then
-        assertThat(thrown)
-            .isInstanceOf(PriceNotFoundException.class)
-            .hasMessageContaining("No se encontró precio");
+        // When & Then
+        StepVerifier.create(adapter.findBestPrice(brandId, productId, fecha))
+                    .expectErrorMatches(throwable -> throwable instanceof PriceNotFoundException &&
+                            throwable.getMessage().contains("No se encontró precio"))
+                    .verify();
 
         verify(r2dbcRepository, times(1)).findBestPrice(brandId, productId, fecha);
     }
@@ -79,13 +77,11 @@ class PriceRepositoryAdapterTest {
         when(r2dbcRepository.findBestPrice(brandId, productId, fecha))
             .thenReturn(Mono.error(new RuntimeException("Database error")));
 
-        // When
-        Throwable thrown = catchThrowable(() -> adapter.findBestPrice(brandId, productId, fecha));
-
-        // Then
-        assertThat(thrown)
-            .isInstanceOf(RuntimeException.class)
-            .hasMessageContaining("Database error");
+        // When & Then
+        StepVerifier.create(adapter.findBestPrice(brandId, productId, fecha))
+                    .expectErrorMatches(throwable -> throwable instanceof RuntimeException &&
+                            throwable.getMessage().contains("Database error"))
+                    .verify();
 
         verify(r2dbcRepository, times(1)).findBestPrice(brandId, productId, fecha);
     }

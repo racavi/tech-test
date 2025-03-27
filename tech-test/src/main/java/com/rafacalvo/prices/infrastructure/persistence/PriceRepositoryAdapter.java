@@ -7,7 +7,7 @@ import com.rafacalvo.prices.domain.querying.PriceNotFoundException;
 import com.rafacalvo.prices.domain.querying.PriceRepository;
 
 import lombok.AllArgsConstructor;
-import reactor.core.scheduler.Schedulers;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 
@@ -20,29 +20,25 @@ public class PriceRepositoryAdapter implements PriceRepository {
     // Mapea PriceEntity a Price (modelo de dominio)
     private Price toDomain(PriceEntity entity) {
         return new Price(
-            entity.getId(),
-            entity.getBrandId(),
-            entity.getStartDate(),
-            entity.getEndDate(),
-            entity.getPriceList(),
-            entity.getProductId(),
-            entity.getPriority(),
-            entity.getPrice(),
-            entity.getCurrency()
-        );
+                entity.getId(),
+                entity.getBrandId(),
+                entity.getStartDate(),
+                entity.getEndDate(),
+                entity.getPriceList(),
+                entity.getProductId(),
+                entity.getPriority(),
+                entity.getPrice(),
+                entity.getCurrency());
     }
 
     @Override
-    public Price findBestPrice(Integer brandId, Integer productId, LocalDateTime fecha) {
-        // Convertimos el Mono en un objeto Price bloqueando de forma controlada.
-        PriceEntity entity = r2dbcRepository.findBestPrice(brandId, productId, fecha)
-                .subscribeOn(Schedulers.boundedElastic())
-                .block();
-        if (entity == null) {
-            throw new PriceNotFoundException("No se encontró precio para brandId=" + brandId +
-                    ", productId=" + productId + " en la fecha " + fecha);
-        }
-        return toDomain(entity);
+    public Mono<Price> findBestPrice(Integer brandId, Integer productId, LocalDateTime fecha) {
+        return r2dbcRepository.findBestPrice(brandId, productId, fecha)
+                .map(this::toDomain)
+                .switchIfEmpty(Mono.error(new PriceNotFoundException(
+                    "No se encontró precio para brandId=" + brandId +
+                    ", productId=" + productId + " en la fecha " + fecha
+                )));
     }
 
 }

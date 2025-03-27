@@ -42,7 +42,7 @@ public class PriceQueryingServiceTest {
         Price priceEntity = new Price(1L, brandId, startDate, endDate, priceList, productId, 0, price, currency);
         PriceResponse expectedResponse = new PriceResponse(brandId, productId, priceList, startDate, endDate, price, currency);
         // mocks
-        when(priceRepository.findBestPrice(brandId, productId, dateTime)).thenReturn(priceEntity);
+        when(priceRepository.findBestPrice(brandId, productId, dateTime)).thenReturn(Mono.just(priceEntity));
 
         // When
         Mono<PriceResponse> actualResponseMono = priceQueryingService.getBestPrice(brandId, productId, dateTime);

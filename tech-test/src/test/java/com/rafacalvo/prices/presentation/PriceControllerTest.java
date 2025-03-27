@@ -1,6 +1,7 @@
 package com.rafacalvo.prices.presentation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -11,15 +12,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+import com.rafacalvo.prices.application.PriceQueryingService;
 import com.rafacalvo.prices.application.PriceResponse;
+
+import reactor.core.publisher.Mono;
 
 @ExtendWith(SpringExtension.class)
 @AutoConfigureWebTestClient
 @WebFluxTest(PriceController.class)
 public class PriceControllerTest {
+
+    @MockitoBean
+    private PriceQueryingService priceQueryingService;
 
     @Autowired
     private WebTestClient webTestClient;
@@ -31,6 +39,20 @@ public class PriceControllerTest {
         Integer productId = 35455;
         LocalDateTime dateTime = LocalDateTime.parse("2020-06-14T16:00:00");
     
+        PriceResponse priceResponse = new PriceResponse(
+            brandId,
+            productId,
+            1, // priceList
+            LocalDateTime.parse("2020-06-14T00:00:00"), // startDate
+            LocalDateTime.parse("2020-06-14T23:59:59"), // endDate
+            new BigDecimal("35.50"), // price
+            "EUR" // currency
+        );
+
+        // Mock the service
+        given(priceQueryingService.getBestPrice(brandId, productId, dateTime))
+            .willReturn(Mono.just(priceResponse));
+
         // When & Then
         webTestClient.get()
             .uri(uriBuilder -> uriBuilder

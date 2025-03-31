@@ -1,0 +1,5 @@
+services:
+  app:
+    image: prices:0.0.1-SNAPSHOT
+    ports:
+      - '80:8080'
